@@ -1,0 +1,22 @@
+REQUIRED PRIVILEGES:
+read, test
+
+
+SCRIPT:
+{
+:local txbyte [/interface ethernet get eth1-gateway value-name=tx-bytes]
+:local rxbyte [/interface ethernet get eth1-gateway value-name=rx-bytes]
+/tool fetch url="YOUR_SERVER_URL/mtstore.pl?id=DEVICE_ID&tx=$txbyte&rx=$rxbyte" mode=https keep-result=no
+}
+
+
+OR MANGLE RULES:
+/ip firewall mangle add chain=forward out-interface=lte action=passthrough comment=tx-wan
+/ip firewall mangle add chain=forward in-interface=lte action=passthrough comment=rx-wan
+
+AND SCRIPT (VIA MANGLE RULES):
+{
+:local txbyte [/ip firewall mangle get [/ip firewall mangle find comment="tx-wan"] bytes]
+:local rxbyte [/ip firewall mangle get [/ip firewall mangle find comment="rx-wan"] bytes]
+/tool fetch url="YOUR_SERVER_URL/mtstore.pl?id=YOUR_DEVICE_ID&tx=$txbyte&rx=$rxbyte" mode=https keep-result=no
+}

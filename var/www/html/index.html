@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monthly traffic</title>
+    <meta charset="utf-8">
+    <script src="d3.v4.min.js"></script>
+    <script src="chartjs.bundle.min.js"></script>
+    <script src="hammer.min.js"></script>
+    <script src="chartjs-plugin-zoom.min.js"></script>
+    <style type="text/css">
+    #dgauge { width: 20%; position: absolute; }
+    #dgraph { width: 80%; position absolute; }
+    </style>
+</head>
+<body>
+
+<div id="dgauge"><canvas id="gauge"></canvas></div>
+<div id="dgraph"><canvas id="graph"></canvas></div>
+
+<script>
+//
+// configuration
+//
+const start = 1;            // day of month when the limit resets
+const limit = 100;          // monthly traffic limit in GB
+
+//
+// vizualize graph and charts
+//
+var now = new Date();
+var monthly = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 35, 0, 0, 0);
+var limiter = new Date(now.getFullYear(), start < now.getDate() ? now.getMonth() : now.getMonth() - 1, start, 0, 0, 0);
+var urlpars = new URLSearchParams(window.location.search);
+var device = urlpars.get("id");
+
+d3.csv("/mtstats.pl?id="+device+"&start="+monthly.getTime() / 1000, function(csv) {
+    csv.forEach(function(d) {
+        d.date = new Date(d.date * 1000);
+        d.tx = Math.round(d.tx/1024/1024);
+        d.tx = +d.tx;
+        d.rx = Math.round(d.rx/1024/1024);
+        d.rx = +d.rx;
+    });
+
+    var graph = new Chart("graph", {
+        type: "line",
+        data: {
+            labels: csv.map(function(d) { return d.date }),
+            datasets: [{
+                label: "Download",
+                backgroundColor: "green",
+                borderColor: "green",
+                data: csv.map(function(d) { return d.rx })
+            }, {
+                label: "Upload",
+                backgroundColor: "red",
+                borderColor: "red",
+                data: csv.map(function(d) { return d.tx })
+            }]
+        },
+        options: {
+            title: {
+                display: true,
+                text: "Network traffic in MB since " + monthly.toDateString() + " for device [" + device + "] (montly limit " + limit + " GB, reset day " + start + ")"
+            },
+            legend: {
+                position: "right",
+            },
+            scales: {
+                xAxes: [{
+                    type: "time",
+                    time: {
+                        unit: "day"
+                    },
+                }],
+                yAxes: [{
+                    display: true,
+                    scaleLabel: {
+                        display: true,
+                        labelString: "MB"
+                    }
+                }]
+            },
+            plugins: {
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: "xy",
+                        rangeMin: {
+                            y: 0
+                        }
+                    },
+                    zoom: {
+                        enabled: true,
+                        mode: "xy",
+                        rangeMin: {
+                            y: 0
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    window.myGraph = graph;
+});
+
+d3.csv("/mtstats.pl?id="+device+"&end=1&start="+limiter.getTime() / 1000, function(csv) {
+    csv.forEach(function(d) {
+        d.rx = Math.round(d.rx/1024/1024);
+        d.rx = +d.rx;
+    });
+
+    var unused = Math.max(Math.round(limit * 1000 - csv[0].rx), 0);
+
+    var graph = new Chart("gauge", {
+        type: "pie",
+        data: {
+            datasets: [{
+                backgroundColor: [
+                    "blue",
+                   "gray"
+                ],
+                 data: [csv[0].rx, unused]
+            }],
+            labels: [
+                "Used",
+                "Free"
+            ]
+        },
+        options: {
+            title: {
+                display: false
+            }
+        }
+    });
+
+    window.myGauge = graph;
+});
+
+document.getElementById("graph").addEventListener("dblclick", function() { myGraph.resetZoom(); });
+</script>
+
+</body>
+</html>
