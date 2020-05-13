@@ -30,28 +30,34 @@ What's included:
 
 - directly via interface:
 
+`
 	{
 	:local txbyte [/interface ethernet get ether1 value-name=tx-bytes]
 	:local rxbyte [/interface ethernet get ether1 value-name=rx-bytes]
 	/tool fetch url="YOUR_SERVER_URL/mtstore.pl?id=DEVICE_ID&tx=$txbyte&rx=$rxbyte" mode=https keep-result=no
 	}
+`
 	
 - using mangle rules:
 
+`
 	/ip firewall mangle add chain=forward out-interface=ether1 action=passthrough comment=tx-wan
 	/ip firewall mangle add chain=forward in-interface=ether1 action=passthrough comment=rx-wan
+`
 	
 - script for mangle rules:
 
+`
 	{
 	:local txbyte [/ip firewall mangle get [/ip firewall mangle find comment="tx-wan"] bytes]
 	:local rxbyte [/ip firewall mangle get [/ip firewall mangle find comment="rx-wan"] bytes]
 	/tool fetch url="YOUR_SERVER_URL/mtstore.pl?id=YOUR_DEVICE_ID&tx=$txbyte&rx=$rxbyte" mode=https keep-result=no
 	}
+`
 	
 **Make sure you replace YOUR_SERVER_URL with your webserver URL and YOUR_DEVICE_ID with any number. The ID is just a number to identity the device.** 
 
 5. Set schedule on your MikroTik device to fire the script regularly (e.g. hourly).
 6. Point your browser to the graph URL:
-	
+
 	http(s)://YOUR_SERVER_URL/mikrotik/index.html?id=YOUR_DEVICE_ID
