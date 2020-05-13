@@ -6,7 +6,7 @@ SCRIPT (assuming ether1 as interface name and sending via https):
 {
 :local txbyte [/interface ethernet get ether1 value-name=tx-bytes]
 :local rxbyte [/interface ethernet get ether1 value-name=rx-bytes]
-/tool fetch url="YOUR_SERVER_URL/mtstore.pl?id=DEVICE_ID&tx=$txbyte&rx=$rxbyte" mode=https keep-result=no
+/tool fetch url="YOUR_SERVER_URL/mtstore.pl?id=YOUR_DEVICE_ID&tx=$txbyte&rx=$rxbyte" mode=https keep-result=no
 }
 
 
